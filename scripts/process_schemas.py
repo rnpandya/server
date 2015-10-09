@@ -163,7 +163,7 @@ class SchemaClass(object):
             self._writeWithIndent(string_, outputFile, 3)
             # Backtick quoted strings cause problems with Sphinx, so we
             # strip them out here.
-            doc = ""
+            doc = "No documentation"
             if field.doc is not None:
                 doc = field.doc.replace('`', '')
             self._writeWithIndent('"""', outputFile, 2)

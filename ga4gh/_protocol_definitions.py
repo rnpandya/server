@@ -58,7 +58,7 @@ class Attributes(ProtocolElement):
         self.vals = kwargs.get(
             'vals', {})
         """
-
+        No documentation
         """
 
 
@@ -824,7 +824,7 @@ class ExternalIdentifierQuery(ProtocolElement):
         self.ids = kwargs.get(
             'ids', None)
         """
-
+        No documentation
         """
 
 
@@ -903,7 +903,7 @@ null, "doc": "", "type": ["null", "string"], "name": "referenceName"},
         self.end = kwargs.get(
             'end', None)
         """
-
+        No documentation
         """
         self.featureSetId = kwargs.get(
             'featureSetId', None)
@@ -935,7 +935,7 @@ null, "doc": "", "type": ["null", "string"], "name": "referenceName"},
         self.start = kwargs.get(
             'start', None)
         """
-
+        No documentation
         """
         self.strand = kwargs.get(
             'strand', None)
@@ -1066,7 +1066,7 @@ null, "doc": "", "type": ["null", "string"], "name": "description"},
         self.id = kwargs.get(
             'id', None)
         """
-
+        No documentation
         """
         self.phenotype = kwargs.get(
             'phenotype', None)
@@ -1306,7 +1306,7 @@ class GenomicFeatureQuery(ProtocolElement):
         self.features = kwargs.get(
             'features', None)
         """
-
+        No documentation
         """
 
 
@@ -1584,7 +1584,7 @@ class OntologyTermQuery(ProtocolElement):
         self.terms = kwargs.get(
             'terms', None)
         """
-
+        No documentation
         """
 
 
@@ -1718,7 +1718,7 @@ class PhenotypeQuery(ProtocolElement):
         self.phenotypes = kwargs.get(
             'phenotypes', None)
         """
-
+        No documentation
         """
 
 
@@ -2897,12 +2897,12 @@ null, "doc": "", "type": ["null", "OntologyTerm"], "name":
         self.evidence = kwargs.get(
             'evidence', None)
         """
-
+        No documentation
         """
         self.feature = kwargs.get(
             'feature', None)
         """
-
+        No documentation
         """
         self.pageSize = kwargs.get(
             'pageSize', None)
@@ -2921,7 +2921,7 @@ null, "doc": "", "type": ["null", "OntologyTerm"], "name":
         self.phenotype = kwargs.get(
             'phenotype', None)
         """
-
+        No documentation
         """
 
 
@@ -4247,7 +4247,7 @@ class Wiggle(ProtocolElement):
         self.end = kwargs.get(
             'end', None)
         """
-
+        No documentation
         """
         self.referenceName = kwargs.get(
             'referenceName', None)
@@ -4262,7 +4262,7 @@ class Wiggle(ProtocolElement):
         self.start = kwargs.get(
             'start', None)
         """
-
+        No documentation
         """
         self.values = kwargs.get(
             'values', [])
