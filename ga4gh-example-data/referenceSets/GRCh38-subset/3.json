@@ -1,0 +1,10 @@
+{
+    "sourceUri": "http://www.ebi.ac.uk/ena/data/view/CM000665.2%26range=0-81617&display=fasta", 
+    "sourceAccessions": [
+        "CM000665.2.subset"
+    ], 
+    "sourceDivergence": null, 
+    "md5checksum": "0680724fdd32e4dba0c14db5cef24f1e", 
+    "isDerived": false, 
+    "ncbiTaxonId": 9606
+}
