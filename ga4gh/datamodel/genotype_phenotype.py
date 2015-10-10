@@ -3,24 +3,27 @@ Module responsible for translating g2p data into GA4GH native
 objects.
 """
 
+# no futures
+# std lib
+import rdflib
+import urlparse
+# locals
 import ga4gh.protocol as protocol
 import ga4gh.exceptions as exceptions
-from urlparse import urlparse, urlunsplit
-import rdflib
 
 
 class G2PDataset:
     """
-    an rdf object store
+    An rdf object store.  The cancer genome database
+    [Clinical Genomics Knowledge Base]
+    (http://nif-crawler.neuinfo.org/monarch/ttl/cgd.ttl)
+    published by the Monarch project was the source of Evidence.
     """
 
-    # keep the graph as a static variable
-    rdfGraph = None
-
     def __init__(self, sources):
-
         """
-        sources [{source,format}]
+        Initialize dataset, using the passed dict of sources
+        [{source,format}] see rdflib.parse() for more
         """
 
         self._searchQuery = """
@@ -46,19 +49,17 @@ class G2PDataset:
             }
             """
 
-        if G2PDataset.rdfGraph is not None:
-            return
-
         # initialize graph
-        G2PDataset.rdfGraph = rdflib.Graph()
+        self._rdfGraph = rdflib.ConjunctiveGraph()
 
         # load with data
         for source in sources:
             if not source['format']:
-                G2PDataset.rdfGraph.parse(source['source'])
+                self._rdfGraph.parse(source['source'])
             else:
-                G2PDataset.rdfGraph.parse(source['source'],
-                                          format=source['format'])
+                self._rdfGraph.parse(source['source'],
+                                     format=source['format'])
+
         # TODO is this necessary?
         self.associationsLength = 0
 
@@ -68,7 +69,6 @@ class G2PDataset:
         associations = self.queryLabels(
             request.feature, request.evidence, request.phenotype,
             request.pageSize, offset)
-        # from IPython.core.debugger import Pdb ;        Pdb().set_trace()
 
         self.associationsLength = len(associations)
         for association in associations:
@@ -79,9 +79,9 @@ class G2PDataset:
          offset=0):
 
         """
-        Thus query is the main search mechanism.
-        It queries graph for annotations that match wild card search of
-        lables or predicate URI
+        This query is the main search mechanism.
+        It queries the graph for annotations that match the
+        AND of [location,drug,disease]
         """
         query = self.formatQuery(location, drug, disease)
 
@@ -93,7 +93,7 @@ class G2PDataset:
 
         # print(query)
 
-        results = G2PDataset.rdfGraph.query(query)
+        results = self._rdfGraph.query(query)
 
         annotations = []
         for row in results:
@@ -180,7 +180,7 @@ class G2PDataset:
         """
 
         annotationQuery = annotationQuery.replace("%FILTER%", filter)
-        results = G2PDataset.rdfGraph.query(annotationQuery)
+        results = self._rdfGraph.query(annotationQuery)
 
         rows = [row.asdict() for row in results]
         for row in rows:
@@ -206,7 +206,7 @@ class G2PDataset:
                 locationQuery = locationQuery.replace(
                     "%FILTER%", "FILTER (?s = <" + location + ">)")
                 # print(locationQuery)
-                results = G2PDataset.rdfGraph.query(locationQuery)
+                results = self._rdfGraph.query(locationQuery)
                 locationRows = [row.asdict() for row in results]
                 for row in locationRows:
                     for k in row:
@@ -262,18 +262,18 @@ class G2PDataset:
 
         location = annotation['location']
         if GENO_0000408 in location:
-            id_, ontologySource_ = self.namespaceSplit(
+            id_, ontologySource = self.namespaceSplit(
                                         location[GENO_0000408]['val'])
             name = location[GENO_0000408]['label']
         else:
-            id_, ontologySource_ = self.namespaceSplit(location['id'])
+            id_, ontologySource = self.namespaceSplit(location['id'])
             name = location['id']
 
         f = protocol.Feature()
         f.featureType = protocol.OntologyTerm.fromJsonDict({
             "name": name,
             "id": id_,
-            "ontologySource": ontologySource_})
+            "ontologySource": ontologySource})
         f.id = annotation['id']
         f.featureSetId = ''
         f.parentIds = []
@@ -286,7 +286,7 @@ class G2PDataset:
         #     print(e.message)
         #     from IPython.core.debugger import Pdb ;        Pdb().set_trace()
 
-        id_, ontologySource_ = self.namespaceSplit(
+        id_, ontologySource = self.namespaceSplit(
                                        annotation[hasObject]['val'])
 
         fpa = protocol.FeaturePhenotypeAssociation()
@@ -300,7 +300,7 @@ class G2PDataset:
         phenotypeInstance.type = protocol.OntologyTerm.fromJsonDict({
             "name": annotation[hasObject]['label'],
             "id": id_,
-            "ontologySource": ontologySource_})
+            "ontologySource": ontologySource})
         fpa.phenotype = phenotypeInstance
 
         #  ECO or OBI is recommended
@@ -310,8 +310,8 @@ class G2PDataset:
             for src in annotation[source]:
                 evidence = protocol.Evidence()
                 evidence.evidenceType = protocol.OntologyTerm()
-                id_, ontologySource_ = self.namespaceSplit(src['val'])
-                evidence.evidenceType.ontologySource = ontologySource_
+                id_, ontologySource = self.namespaceSplit(src['val'])
+                evidence.evidenceType.ontologySource = ontologySource
                 evidence.evidenceType.id = id_
 
                 evidence.evidenceType.name = ''
@@ -325,14 +325,14 @@ class G2PDataset:
 
         return fpa
 
-    def namespaceSplit(self, _url, _separator='/'):
+    def namespaceSplit(self, url, separator='/'):
         """
         given a url return the id of the resource and the ontology source
         """
-        o = urlparse(_url)
-        _id = o.path.split(_separator)[-1]
-        _ontologySource = urlunsplit([o[0],
-                                      o[1],
-                                      o[2].replace(_id, ''),
-                                      o[4], ''])
-        return(_id, _ontologySource)
+        o = urlparse.urlparse(url)
+        _id = o.path.split(separator)[-1]
+        ontologySource = urlparse.urlunsplit([o[0],
+                                              o[1],
+                                              o[2].replace(_id, ''),
+                                              o[4], ''])
+        return _id, ontologySource
