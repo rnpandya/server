@@ -1,13 +1,13 @@
 *~
 *.swp
 *.swo
-ga4gh-example-data*
+#ga4gh-example-data*
 ga4gh-downloaded-data*
 scripts/auth.yml
-*.fa
-*.pid
-*.fai
-*.gzi
+#*.fa
+#*.pid
+#*.fai
+#*.gzi
 
 # Below based off of https://gist.github.com/octocat/9257657
 # and https://github.com/github/gitignore/blob/master/Python.gitignore
@@ -27,7 +27,7 @@ scripts/auth.yml
 # git has its own built in compression methods
 *.7z
 *.dmg
-*.gz
+#*.gz
 *.iso
 *.jar
 *.rar
