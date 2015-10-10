@@ -425,6 +425,13 @@ class DisplayedRoute(object):
             return result
         return wrapper
 
+@app.route('/documentation')
+@app.route('/documentation/<path:path>')
+def send_static_file(path=None):
+    print('documentation',path)
+    if path is None:
+        path = 'index.html'
+    return flask.send_from_directory(os.getcwd()+'/documentation', path)
 
 @app.route('/')
 def index():
