@@ -7,6 +7,7 @@ objects.
 # std lib
 import rdflib
 import urlparse
+import time
 # locals
 import ga4gh.protocol as protocol
 import ga4gh.exceptions as exceptions
@@ -99,8 +100,7 @@ class G2PDataset:
         for row in results:
             annotations.append(
                 self.toGA4GH(
-                              self.query("FILTER (?s = <" +
-                                         row['s'].toPython()+">)")))
+                              self.query("<%s>" %  row['s'].toPython())))
 
         return annotations
 
@@ -153,7 +153,7 @@ class G2PDataset:
         query = query.replace("%LOCATION%", locationClause)
         return query
 
-    def query(self, filter=''):
+    def query(self, subject=''):
         """
         This is the 'detail' query
 
@@ -172,45 +172,48 @@ class G2PDataset:
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
         SELECT distinct *
           WHERE {
-          ?s    a OBAN:association .
-          ?s ?p ?o .
-          OPTIONAL {?o  rdfs:label ?label .} .
-        %FILTER%
+          %SUBJECT% ?p ?o .
+          OPTIONAL {?o  rdfs:label ?label .}
         }
         """
 
-        annotationQuery = annotationQuery.replace("%FILTER%", filter)
+        annotationQuery = annotationQuery.replace("%SUBJECT%", subject)
         results = self._rdfGraph.query(annotationQuery)
-
+        now = time.time()
         rows = [row.asdict() for row in results]
+        #print('annotationQuery',time.time()-now)
+
         for row in rows:
             for k in row:
                 row[k] = row[k].toPython()
+            row['s'] = subject
 
         locationQuery = """
         PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
              PREFIX OBO: <http://purl.obolibrary.org/obo/>
         SELECT distinct *
         WHERE {
-        ?s    a  OBO:SO_0001059  .
-        ?s ?p ?o .
+        %SUBJECT%    a  OBO:SO_0001059  .
+        %SUBJECT%   ?p ?o .
         OPTIONAL {?o  rdfs:label ?label .} .
-        %FILTER%
         }
         """
 
         locationRows = []
         for row in rows:
             if row['p'] == 'http://purl.org/oban/association_has_subject':
-                location = row['o']
+                location = "<" + row['o'] + ">"
                 locationQuery = locationQuery.replace(
-                    "%FILTER%", "FILTER (?s = <" + location + ">)")
+                    "%SUBJECT%",location)
                 # print(locationQuery)
+                now = time.time()
                 results = self._rdfGraph.query(locationQuery)
                 locationRows = [row.asdict() for row in results]
                 for row in locationRows:
                     for k in row:
                         row[k] = row[k].toPython()
+                    row['s'] = location
+                #print('locationQuery',time.time()-now)
 
         annotation = self.flatten(rows)
         location = self.flatten(locationRows)

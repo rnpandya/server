@@ -839,7 +839,7 @@ class FileSystemBackend(AbstractBackend):
 
         self._g2pDataset = genotype_phenotype.G2PDataset(
             [
-                {'source': 'tests/data/cgd-test.ttl', 'format': "n3"},
+                {'source': 'tests/data/cgd.ttl', 'format': "n3"},
                 {'source':
                     'https://raw.githubusercontent.com/oborel/obo-relations'
                     '/master/ro.owl',
