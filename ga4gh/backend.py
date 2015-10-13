@@ -847,6 +847,14 @@ class FileSystemBackend(AbstractBackend):
             ])
 
 
+class LiteromeBackend(AbstractBackend):
+    """
+    A GA4GH backend backed by data on the file system
+    """
+    def __init__(self):
+        super(AbstractBackend, self).__init__()
+        self._g2pDataset = genotype_phenotype.LiteromeDataset()
+
 class GenotypePhenotypeIterator(IntervalIterator):
     """
     An interval iterator for evidence

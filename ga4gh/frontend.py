@@ -177,7 +177,9 @@ def configure(configFile=None, baseConfig="ProductionConfig",
     # using the special strings __SIMULATED__ and __EMPTY__ seems OK for
     # now, but is certainly not ideal.
     dataSource = app.config["DATA_SOURCE"]
-    if dataSource == "__SIMULATED__":
+    if True:
+        theBackend = backend.LiteromeBackend()
+    elif dataSource == "__SIMULATED__":
         randomSeed = app.config["SIMULATED_BACKEND_RANDOM_SEED"]
         numCalls = app.config["SIMULATED_BACKEND_NUM_CALLS"]
         variantDensity = app.config["SIMULATED_BACKEND_VARIANT_DENSITY"]

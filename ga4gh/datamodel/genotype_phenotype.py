@@ -8,11 +8,13 @@ objects.
 import rdflib
 import urlparse
 import time
+import requests
 # locals
 import ga4gh.protocol as protocol
 import ga4gh.exceptions as exceptions
 
 
+# todo: rename to MonarchDataset?
 class G2PDataset:
     """
     An rdf object store.  The cancer genome database
@@ -339,3 +341,113 @@ class G2PDataset:
                                               o[2].replace(_id, ''),
                                               o[4], ''])
         return _id, ontologySource
+
+class LiteromeDataset:
+    """
+    A front-end to the Microsoft Research web service for the Literome Dataset
+    http://literome.azurewebsites.net/WebService
+    "Literome: PubMed-Scale Genomic Knowledge Base in the Cloud"
+    Hoifung Poon, Chris Quirk, Charlie DeZiel, David Heckerman
+    In Bioinformatics 30.19 (2014), 2840-2842.
+    """
+
+    def __init__(self):
+        self.feature = None
+        self.phenotype = None
+        self.response = {'Associations': []}
+        self.responseLen = 0
+
+    def _search(self, request):
+        associations = self.queryLabels(
+            request.feature, request.evidence, request.phenotype,
+            request.pageSize, request.offset)
+        self.associationsLength = len(associations)
+        for association in associations:
+            yield association
+
+    def queryLabels(
+        self, feature=None, evidence=None, phenotype=None,
+        pageSize=None, offset=0):
+        """
+        Either retrieve last query from cache or submit a query
+        Then page through the results (since Literome does not provide paging)
+        """
+        print "queryLabels " + feature + ", " + phenotype
+        if feature != self.feature or phenotype != self.phenotype:
+            self.feature = feature
+            self.phenotype = phenotype
+            response = requests.get('http://literome.cloudapp.net/gwas/get',
+                                    params={'snporgene': feature,
+                                            'diseaseordrug': phenotype})
+            print "literome response status " + str(response.status_code)
+            if response.status_code != 200:
+                self.response = {'Associations': []}
+                self.responseLen = 0
+            else:
+                self.response = response.json()
+                self.responseLen = len(self.response['Associations'])
+            print "literome returned " + str(self.responseLen) + " answers"
+        if pageSize == None:
+            pageSize = len(self.response['Associations'])
+        if offset < 0 or offset >= self.responseLen or pageSize <= 0:
+            return []
+        elements = self.response['Associations'][offset:min(offset + pageSize, self.responseLen)]
+        return [self.mapResult(elem, self.response['Abstracts']) for elem in elements]
+
+    def mapResult(self, element, abstracts):
+        """
+        Given a single result from Literome, return a protocol.FeaturePhenotypeAssociation
+        """
+
+        fpa = protocol.FeaturePhenotypeAssociation()
+        fpa.id = element['SnpOrGeneId'] + ':' + element['DiseaseOrDrugId']
+        fpa.environmentalContexts = []
+        fpa.description = None
+
+        # Feature
+        term = protocol.OntologyTerm()
+        if element['SnpOrGeneType'] == 'gene':
+            # todo: offical URI?
+            term.ontologySource = 'HUGO'
+            term.id = element['SnpOrGeneId']
+        else:
+            # todo: offical URI?
+            term.ontologySource = 'rsID'
+            term.id = element['SnpOrGeneId']
+        f = protocol.Feature()
+        f.featureType = term
+        f.id = term.id
+        f.featureSetId = ''
+        f.parentIds = []
+        f.attributes = protocol.Attributes.fromJsonDict({"vals": {}})
+
+        fpa.features = [f]
+        fpa.description = None
+
+        # Evidence
+        evterm = protocol.OntologyTerm()
+        evterm.ontologySource = 'PMID'
+        evterm.id = element['Pmid']
+        abstract = [a['Title'] for a in abstracts if a['Pmid'] == element['Pmid']]
+        ev = protocol.Evidence()
+        ev.evidenceType = evterm
+        ev.description = abstract[0] if len(abstract) > 0 else None
+        fpa.evidence = [ev]
+
+        # Phenotype
+        ph = protocol.PhenotypeInstance()
+        ph.id = element['DiseaseOrDrugId']
+        phtype = protocol.OntologyTerm()
+        if element['DiseaseOrDrugType'] == 'disease':
+            phtype.ontologySource = 'MeSH'
+            phtype.id = ph.id
+        else:
+            phtype.ontologySource = 'DrugBank'
+            phtype.id = ph.id
+        ph.type = phtype
+        ph.qualifier = None
+        ph.ageOfOnset = None
+        ph.description = element['DiseaseOrDrugName']
+        fpa.phenotype = ph
+
+        return fpa
